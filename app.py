@@ -1,52 +1,31 @@
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import urlparse, parse_qs
+import web
+import sqlite3
+import recetario.controllers.index
+import recetario.controllers.listas
+import recetario.controllers.filtro
 
-from recetario.controllers import index, filtro, listas
+urls = (
+    '/', 'recetario.controllers.index.Index',
+    '/listas', 'recetario.controllers.listas.Listas',
+    '/filtro', 'recetario.controllers.filtro.Filtro',
+)
 
+app = web.application(urls, globals())
 
-class Manejador(BaseHTTPRequestHandler):
-
-    def do_GET(self):
-        partes = urlparse(self.path)
-        ruta = partes.path
-        parametros = parse_qs(partes.query)
-
-        if ruta == "/filtro":
-            categoria = parametros.get("categoria", ["todas"])[0]
-            pagina = filtro.renderizar(categoria)
-        elif ruta == "/listas":
-            pagina = listas.renderizar_formulario()
-        else:
-            pagina = index.renderizar()
-
-        self._responder_html(pagina)
-
-    def do_POST(self):
-        if self.path == "/listas":
-            longitud = int(self.headers["Content-Length"])
-            datos = self.rfile.read(longitud).decode("utf-8")
-            campos = parse_qs(datos)
-
-            nombre = campos.get("nombre", [""])[0].strip()
-            categoria = campos.get("categoria", [""])[0]
-
-            listas.agregar_receta(nombre, categoria)
-
-            # Despues de agregar, regresa a la pagina principal
-            self.send_response(303)
-            self.send_header("Location", "/")
-            self.end_headers()
-
-    def _responder_html(self, contenido):
-        self.send_response(200)
-        self.send_header("Content-type", "text/html; charset=utf-8")
-        self.end_headers()
-        self.wfile.write(contenido.encode("utf-8"))
-
+def crear_bd():
+    conn = sqlite3.connect("recetario.db")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS recetas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nombre TEXT,
+            ingredientes TEXT,
+            categoria TEXT
+        )
+    """)
+    conn.close()
 
 if __name__ == "__main__":
-    listas.inicializar_db()  # crea recetario.db la primera vez, usando sql/script.sql
-    servidor = HTTPServer(("localhost", 8000), Manejador)
-    print("Servidor corriendo en http://localhost:8000")
-    servidor.serve_forever()
+    crear_bd()
+    app.run()
+
     

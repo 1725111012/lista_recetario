@@ -1,14 +1,15 @@
+$def with (mensaje)
 <html>
-<head><title>Recetario</title></head>
 <body>
-    <h1>Recetario</h1>
-
-    <h2>Filtrar por categoria</h2>
-    <p>{{ENLACES_CATEGORIAS}}</p>
-
-    <h2>Todas las recetas</h2>
-    {{LISTA_RECETAS}}
-
-    <p><a href="/listas">Agregar una receta nueva</a></p>
+<h1>Agregar receta</h1>
+$if mensaje:
+    <p>$mensaje</p>
+<form method="POST" action="/">
+    Nombre: <input type="text" name="nombre"><br>
+    Ingredientes: <input type="text" name="ingredientes"><br>
+    <button type="submit">Guardar</button>
+</form>
+<p><a href="/listas">Ver todas las recetas</a></p>
+<p><a href="/filtro">Filtrar por categoría</a></p>
 </body>
 </html>

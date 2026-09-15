@@ -1,33 +1,41 @@
-import os
-from . import listas
+import web
+import sqlite3
 
-RUTA_VIEWS = os.path.join(os.path.dirname(__file__), "..", "views")
+render = web.template.render('recetario/views/')
 
+CATEGORIAS = {
+    "Dulce":     ["pastel", "azucar", "chocolate", "postre", "dulce", "galleta", "helado"],
+    "Picosa":    ["chile", "picante", "jalapeno", "habanero"],
+    "Mariscos":  ["camaron", "pescado", "marisco", "pulpo", "atun"],
+    "Pastas":    ["pasta", "espagueti", "macarron", "lasagna"],
+    "Cortes":    ["bistec", "filete", "costilla", "carne"],
+    "Aderezos":  ["aderezo", "mayonesa", "vinagreta"],
+    "Agridulce": ["agridulce", "tamarindo"],
+}
 
-def _leer_view(nombre_archivo):
-    ruta = os.path.join(RUTA_VIEWS, nombre_archivo)
-    with open(ruta, encoding="utf-8") as archivo:
-        return archivo.read()
+def categorizar(texto):
+    texto = texto.lower()
+    for categoria, palabras in CATEGORIAS.items():
+        for palabra in palabras:
+            if palabra in texto:
+                return categoria
+    return "Salado"
 
+class Index:
+    def GET(self):
+        return render.index(None)
 
-def _armar_enlaces_categorias():
-    enlaces = '<a href="/">Todas</a> | '
-    enlaces += " | ".join(
-        f'<a href="/filtro?categoria={c}">{c.capitalize()}</a>' for c in listas.obtener_categorias()
-    )
-    return enlaces
+    def POST(self):
+        datos = web.input(nombre="", ingredientes="")
+        categoria = categorizar(datos.nombre + " " + datos.ingredientes)
 
+        conn = sqlite3.connect("recetario.db")
+        conn.execute(
+            "INSERT INTO recetas (nombre, ingredientes, categoria) VALUES (?, ?, ?)",
+            (datos.nombre, datos.ingredientes, categoria)
+        )
+        conn.commit()
+        conn.close()
 
-def _armar_lista_recetas(recetas):
-    if not recetas:
-        return "<p>No hay recetas registradas todavia.</p>"
-    filas = "".join(f"<li><b>{r['nombre']}</b> - {r['categoria'].capitalize()}</li>" for r in recetas)
-    return f"<ul>{filas}</ul>"
-
-
-def renderizar():
-    """Arma la pagina principal mostrando TODAS las recetas de la base de datos."""
-    html = _leer_view("index.html")
-    html = html.replace("{{ENLACES_CATEGORIAS}}", _armar_enlaces_categorias())
-    html = html.replace("{{LISTA_RECETAS}}", _armar_lista_recetas(listas.obtener_recetas()))
-    return html
+        return render.index(f'"{datos.nombre}" se guardó como {categoria}')
+    

@@ -1,17 +1,9 @@
+$def with (recetas)
 <html>
-<head><title>Recetario - Agregar receta</title></head>
 <body>
-    <h1>Agregar receta</h1>
-
-    <form method="POST" action="/listas">
-        Nombre: <input type="text" name="nombre"><br>
-        Categoria:
-        <select name="categoria">
-            {{OPCIONES_CATEGORIA}}
-        </select><br>
-        <input type="submit" value="Agregar">
-    </form>
-
-    <p><a href="/">Volver al recetario</a></p>
+<h1>Todas las recetas</h1>
+$for receta in recetas:
+    <p><b>$receta[0]</b> ($receta[2])<br>$receta[1]</p>
+<p><a href="/">Agregar receta</a></p>
 </body>
 </html>

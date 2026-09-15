@@ -1,14 +1,21 @@
+$def with (categoria, recetas)
 <html>
-<head><title>Recetario - Filtro</title></head>
 <body>
-    <h1>Recetario</h1>
+<h1>Filtrar por categoría</h1>
+<a href="/filtro?categoria=Salado">Salado</a> |
+<a href="/filtro?categoria=Dulce">Dulce</a> |
+<a href="/filtro?categoria=Agridulce">Agridulce</a> |
+<a href="/filtro?categoria=Picosa">Picosa</a> |
+<a href="/filtro?categoria=Pastas">Pastas</a> |
+<a href="/filtro?categoria=Aderezos">Aderezos</a> |
+<a href="/filtro?categoria=Cortes">Cortes</a> |
+<a href="/filtro?categoria=Mariscos">Mariscos</a>
 
-    <h2>Filtrar por categoria</h2>
-    <p>{{ENLACES_CATEGORIAS}}</p>
+$if categoria:
+    <h2>$categoria</h2>
+    $for receta in recetas:
+        <p><b>$receta[0]</b><br>$receta[1]</p>
 
-    <h2>Recetas: {{CATEGORIA_ACTUAL}}</h2>
-    {{LISTA_RECETAS}}
-
-    <p><a href="/">Ver todas</a> | <a href="/listas">Agregar una receta nueva</a></p>
+<p><a href="/">Agregar receta</a></p>
 </body>
 </html>
