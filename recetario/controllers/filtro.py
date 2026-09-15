@@ -1,58 +1,34 @@
-import web
-import sqlite3
+import os
+from . import listas
 
-render = web.template.render('views', base='layout') # Agregamos base='layout' para usar tu layout.html
+RUTA_VIEWS = os.path.join(os.path.dirname(__file__), "..", "views")
 
-class Ver_contacto:
 
-    def buscarContacto(self, id_contacto:int):
-        try:
-            # Conecta a la base de datos
-            conn = sqlite3.connect('sql/agenda.db')
-            cursor = conn.cursor()
-            # Consulta los registros de la tabla contactos
-            query = "SELECT * FROM contactos WHERE id_contacto= ?"
-            cursor.execute(query, (id_contacto,))            
-            
-            # Obtenemos la única fila resultante
-            row = cursor.fetchone()
-            
-            # Crea un array vacio para almacenar los registros
-            contactos = []
-            
-            if row:
-                # Almacena cada registro en un diccionario
-                contacto = {
-                    'id_contacto': row[0],
-                    'nombre': row[1],
-                    'primer_apellido': row[2],
-                    'segundo_apellido': row[3],
-                    'email': row[4],
-                    'telefono': row[5]
-                }
-                # Agrega el diccionario creado al array
-                contactos.append(contacto)
+def _leer_view(nombre_archivo):
+    ruta = os.path.join(RUTA_VIEWS, nombre_archivo)
+    with open(ruta, encoding="utf-8") as archivo:
+        return archivo.read()
 
-            # Cierra la conexion a la base de datos
-            conn.close()     
-            return contactos
-        except sqlite3.Error as error:
-            print(f"ERROR 100: {error.args}")
-            return []
-        except Exception as error:
-            print(f"ERROR 101: {error.args}")
-            return []
-        finally:
-            if conn:
-                conn.close()
 
-    def GET(self,id_contacto):
-        print(f"ID_CONTACTO: {id_contacto}")
-        contacto = self.buscarContacto(id_contacto)
-        print(contacto)
+def _armar_enlaces_categorias():
+    enlaces = '<a href="/">Todas</a> | '
+    enlaces += " | ".join(
+        f'<a href="/filtro?categoria={c}">{c.capitalize()}</a>' for c in listas.obtener_categorias()
+    )
+    return enlaces
 
-        # Como tu función devuelve una lista, mandamos el primer elemento contacto[0] si existe
-        if contacto:
-            return render.ver_contacto(contacto[0])
-        else:
-            return "Contacto no encontrado"
+
+def _armar_lista_recetas(recetas):
+    if not recetas:
+        return "<p>No hay recetas en esta categoria.</p>"
+    filas = "".join(f"<li><b>{r['nombre']}</b> - {r['categoria'].capitalize()}</li>" for r in recetas)
+    return f"<ul>{filas}</ul>"
+
+
+def renderizar(categoria):
+    """Arma la pagina mostrando solo las recetas de esa categoria (filtro via SQL)."""
+    html = _leer_view("filtro.html")
+    html = html.replace("{{ENLACES_CATEGORIAS}}", _armar_enlaces_categorias())
+    html = html.replace("{{CATEGORIA_ACTUAL}}", categoria.capitalize())
+    html = html.replace("{{LISTA_RECETAS}}", _armar_lista_recetas(listas.filtrar_por_categoria(categoria)))
+    return html

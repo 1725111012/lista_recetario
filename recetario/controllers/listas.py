@@ -1,75 +1,76 @@
-import web
+import os
 import sqlite3
 
-render = web.template.render('views', base='layout')
+RUTA_BASE = os.path.join(os.path.dirname(__file__), "..", "..")
+RUTA_DB = os.path.join(RUTA_BASE, "recetario.db")
+RUTA_SCRIPT_SQL = os.path.join(RUTA_BASE, "sql", "script.sql")
+RUTA_VIEWS = os.path.join(os.path.dirname(__file__), "..", "views")
 
-class Lista_Contacto:
+CATEGORIAS = ["salado", "dulce", "agridulce", "picoso", "pastas", "aderezos", "cortes", "mariscos"]
 
-    def buscarContacto(self, id_contacto:int):
-        conn = None
-        try:
-            # Conecta a la base de datos
-            conn = sqlite3.connect('sql/agenda.db')
-            cursor = conn.cursor()
-            # Consulta los registros de la tabla contactos
-            query = "SELECT * FROM contactos WHERE id_contacto= ?"
-            cursor.execute(query, (id_contacto,))            
-            # Crea un array vacio para almacenar los registros
-            contactos = []
-            # Almacena cada registro en un diccionario
-            for row in cursor.fetchall():
-                contacto = {
-                    'id_contacto': row[0],
-                    'nombre': row[1],
-                    'primer_apellido': row[2],
-                    'segundo_apellido': row[3],
-                    'email': row[4],
-                    'telefono': row[5]
-                }
-                # Agrega el diccionario creado al array
-                contactos.append(contacto)
-        
-            return contactos
-        except sqlite3.Error as error:
-            print(f"ERROR 100: {error.args}")
-            return []
-        except Exception as error:
-            print(f"ERROR 101: {error.args}")
-            return []
-        finally:
-            if conn:
-                conn.close()
 
-    # Agregamos este método que le hacía falta a tu clase para que no marque error
-    def obtenerContactos(self):
-        conn = None
-        try:
-            conn = sqlite3.connect('sql/agenda.db')
-            cursor = conn.cursor()
-            query = "SELECT * FROM contactos"
-            cursor.execute(query)            
-            contactos = []
-            for row in cursor.fetchall():
-                contacto = {
-                    'id_contacto': row[0],
-                    'nombre': row[1],
-                    'primer_apellido': row[2],
-                    'segundo_apellido': row[3],
-                    'email': row[4],
-                    'telefono': row[5]
-                }
-                contactos.append(contacto)
-            return contactos
-        except sqlite3.Error as error:
-            print(f"ERROR 102: {error.args}")
-            return []
-        finally:
-            if conn:
-                conn.close()
+def _conectar():
+    return sqlite3.connect(RUTA_DB)
 
-    def GET(self):
-        # NOTA: Aquí agregamos los paréntesis () para que ejecute la consulta
-        contactos = self.obtenerContactos()
-        print(contactos)
-        return render.lista_contacto(contactos)
-    
+
+def inicializar_db():
+    """Si la base de datos no existe todavia, la crea corriendo sql/script.sql"""
+    if os.path.exists(RUTA_DB):
+        return
+    conexion = _conectar()
+    with open(RUTA_SCRIPT_SQL, encoding="utf-8") as archivo:
+        conexion.executescript(archivo.read())
+    conexion.commit()
+    conexion.close()
+
+
+def obtener_categorias():
+    return CATEGORIAS
+
+
+def obtener_recetas():
+    """Trae todas las recetas guardadas en la base de datos."""
+    conexion = _conectar()
+    cursor = conexion.execute("SELECT nombre, categoria, descripcion FROM recetas")
+    filas = cursor.fetchall()
+    conexion.close()
+    return [{"nombre": f[0], "categoria": f[1], "descripcion": f[2]} for f in filas]
+
+
+def filtrar_por_categoria(categoria):
+    """Trae solo las recetas de la categoria pedida (filtro hecho con SQL)."""
+    conexion = _conectar()
+    cursor = conexion.execute(
+        "SELECT nombre, categoria, descripcion FROM recetas WHERE categoria = ?",
+        (categoria,),
+    )
+    filas = cursor.fetchall()
+    conexion.close()
+    return [{"nombre": f[0], "categoria": f[1], "descripcion": f[2]} for f in filas]
+
+
+def agregar_receta(nombre, categoria, descripcion=""):
+    """Inserta una receta nueva en la base de datos."""
+    if not nombre or categoria not in CATEGORIAS:
+        return
+    conexion = _conectar()
+    conexion.execute(
+        "INSERT INTO recetas(nombre, categoria, descripcion) VALUES (?, ?, ?)",
+        (nombre, categoria, descripcion),
+    )
+    conexion.commit()
+    conexion.close()
+
+
+def _leer_view(nombre_archivo):
+    ruta = os.path.join(RUTA_VIEWS, nombre_archivo)
+    with open(ruta, encoding="utf-8") as archivo:
+        return archivo.read()
+
+
+def renderizar_formulario():
+    """Arma la pagina con el formulario para agregar una receta nueva."""
+    opciones = "".join(f'<option value="{c}">{c.capitalize()}</option>' for c in CATEGORIAS)
+    html = _leer_view("listas.html")
+    html = html.replace("{{OPCIONES_CATEGORIA}}", opciones)
+    return html
