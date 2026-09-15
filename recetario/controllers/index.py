@@ -4,13 +4,14 @@ import sqlite3
 render = web.template.render('recetario/views/')
 
 CATEGORIAS = {
+
+    "Agridulce": ["agridulce", " limon", "catsup", "salsa de soya "],
     "Dulce":     ["pastel", "azucar", "chocolate", "postre", "dulce", "galleta", "helado"],
     "Picosa":    ["chile", "picante", "jalapeno", "habanero"],
     "Mariscos":  ["camaron", "pescado", "marisco", "pulpo", "atun"],
     "Pastas":    ["pasta", "espagueti", "macarron", "lasagna"],
     "Cortes":    ["bistec", "filete", "costilla", "carne"],
     "Aderezos":  ["aderezo", "mayonesa", "vinagreta"],
-    "Agridulce": ["agridulce", "tamarindo"],
 }
 
 def categorizar(texto):
